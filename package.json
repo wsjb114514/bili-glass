@@ -3,10 +3,26 @@
   "productName": "BiliGlass",
   "version": "1.0.0",
   "description": "B站大会员每日经验自动领取 · 开机自启 · 液态玻璃界面",
-  "author": "BiliGlass",
+  "author": "wsjb114514 <wsjb114514@users.noreply.github.com>",
   "main": "src/main/main.js",
   "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wsjb114514/bili-glass.git"
+  },
+  "homepage": "https://github.com/wsjb114514/bili-glass#readme",
+  "bugs": {
+    "url": "https://github.com/wsjb114514/bili-glass/issues"
+  },
+  "keywords": [
+    "bilibili",
+    "electron",
+    "windows",
+    "liquid-glass",
+    "acrylic",
+    "automation"
+  ],
   "scripts": {
     "start": "electron .",
     "start:auto": "electron . --autostart",

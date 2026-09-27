@@ -6,6 +6,11 @@
 
 <sub>截图使用演示数据 · [设置面板预览](docs/screenshot-settings.png) · MIT License · Electron + Win32 原生调用 · 无需原生编译</sub>
 
+```bash
+git clone https://github.com/wsjb114514/bili-glass.git
+cd bili-glass && npm install && npm start
+```
+
 ```
 ┌──────────────────────────────────────┐
 │ ● BiliGlass   大会员每日经验 · 开机  ─ ×│
