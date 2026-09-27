@@ -1,0 +1,80 @@
+{
+  "name": "bili-glass",
+  "productName": "BiliGlass",
+  "version": "1.0.0",
+  "description": "B站大会员每日经验自动领取 · 开机自启 · 液态玻璃界面",
+  "author": "BiliGlass",
+  "main": "src/main/main.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "start:auto": "electron . --autostart",
+    "pack": "electron-builder --win --dir",
+    "dist": "electron-builder --win",
+    "dist:portable": "electron-builder --win portable",
+    "dist:nsis": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.bilifan.biliglass",
+    "productName": "BiliGlass",
+    "copyright": "Copyright © 2025 BiliGlass",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "build/icon.ico",
+      "node_modules/**/*",
+      "!**/*.map",
+      "!**/*.md",
+      "!**/node_modules/**/{test,tests,__tests__,example,examples,doc,docs,man}/**"
+    ],
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "BiliGlass-${version}-便携版.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BiliGlass",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "BiliGlass-${version}-安装版.${ext}"
+    },
+    "portable": {
+      "unpackDirName": "BiliGlass",
+      "requestExecutionLevel": "user"
+    }
+  },
+  "dependencies": {
+    "koffi": "^3.3.1",
+    "qrcode": "^1.5.4",
+    "sql.js": "^1.14.2"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  }
+}
