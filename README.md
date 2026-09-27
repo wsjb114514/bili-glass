@@ -276,7 +276,9 @@ body: aid, bvid, cid, mid, played_time, realtime, real_played_time,
 | `node tools/make-icon.js` | 重新生成 `build/icon.ico`（多尺寸，纯自绘） |
 | `node tools/debug-*.js` | 排查客户端/浏览器登录态存放位置 |
 | `node tools/register-autostart.js enable\|disable\|status [exe路径]` | 直接用命令行登记/取消开机自启（默认登记便携版 exe） |
+| `node tools/gh-create-release.js` / `gh-fix-release-assets.js` | 用 GitHub API 创建 Release 并上传产物（注意：GitHub 会剥掉资源名里的非 ASCII 字符，中文件名会重名冲突，需用 ASCII 名） |
 | `tools/shot.ps1` | 桌面整屏或指定窗口截图 |
+| `tools/check-corner.ps1` | 采样窗口角落像素，客观验证圆角是否生效 |
 
 ---
 
