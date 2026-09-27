@@ -1,0 +1,22 @@
+# 依赖与产物
+node_modules/
+dist/
+out/
+artifacts/
+
+# 运行时数据：本机配置与加密登录凭据，绝不入库
+config.json
+credentials.dat
+logs/
+*.log
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 打包缓存
+*.blockmap
+builder-debug.yml
