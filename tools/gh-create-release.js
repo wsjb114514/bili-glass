@@ -12,14 +12,44 @@ const H = { Authorization: 'Bearer ' + token, 'User-Agent': 'BiliGlass', Accept:
 
 const BODY = `## BiliGlass v1.0.0
 
-开机自动拉起哔哩哔哩客户端 → 模拟观看视频 → 领取大会员每日 10 经验，全过程静默，跑完弹一张结果卡片。
+开机自动拉起哔哩哔哩客户端 → 模拟观看视频 → 领取大会员每日 10 经验。**本版新增：开机先检测，已领取就直接退出进程；可自定义观看哪个视频。**
+
+### 本版新增
+
+**① 开机先检测，已领取就直接退出**
+
+开机后先向服务端确认「今天这 10 经验领了没」，而不是无脑跑整套流程：
+
+| 预检结果 | 行为 |
+| --- | --- |
+| \`69198\` 已领取 | **立刻退出进程**：不拉起客户端、不看视频、不弹窗 |
+| \`0\` 领取成功 | 这次不需要观看前置，直接记成功并弹结果卡片 |
+| \`235004\` 被限流 | 回退用本地记录判断，本程序今天领过就同样直接退出 |
+| 其他 | 继续执行：拉起客户端 → 观看 62 秒 → 领取 |
+
+本机实测：已领取时整轮 **0.3 秒**结束（原先 63.8 秒）。
+
+**② 自定义观看哪个视频**
+
+设置里粘贴下面任意一种都能识别：
+
+| 粘贴内容 | 识别方式 |
+| --- | --- |
+| \`BV1GJ411x7h7\` | 直接取 BV 号（前后带其它文字也能认出） |
+| \`av2\` | 转 avid 查询 |
+| \`https://b23.tv/xxxxx\` | 手机 App 分享短链，自动跟跳转解析 |
+| 完整视频页链接 | 直接取 BV 号 |
+
+点「解析」会显示解析到的标题和时长供确认；点「随机」恢复自动从排行榜挑。指定稿件被删会自动回退。
 
 ### 下载哪个
 
 | 文件 | 说明 |
 | --- | --- |
-| \`BiliGlass-1.0.0-安装版.exe\` | **推荐**。一键安装到用户目录，免管理员，启动约 2 秒 |
-| \`BiliGlass-1.0.0-便携版.exe\` | 免安装单文件。⚠️ 每次启动要自解压约 500MB 到临时目录，本机实测约 28 秒，不适合开机自启 |
+| \`BiliGlass-1.1.0-setup.exe\` | **推荐（安装版）**。一键安装到用户目录，免管理员，启动约 2 秒 |
+| \`BiliGlass-1.1.0-portable.exe\` | 免安装单文件（便携版）。⚠️ 每次启动要自解压约 500MB，实测约 28 秒，**不适合开机自启** |
+
+> 资源名用 ASCII 是因为 GitHub 会剥掉资源文件名里的非 ASCII 字符，中文名会导致两个包重名冲突。
 
 ### 首次使用
 
@@ -27,24 +57,21 @@ const BODY = `## BiliGlass v1.0.0
 2. 看到账号卡显示昵称 + 大会员徽章即成功
 3. 打开底部「开机自启」开关
 
-之后每天开机自动执行。**发布包里不含任何账号凭据**（登录态是运行时用 Windows DPAPI 加密存在本机 \`%APPDATA%\\BiliGlass\` 的）。
+**发布包里不含任何账号凭据** —— 登录态是运行时用 Windows DPAPI 加密存在本机 \`%APPDATA%\\BiliGlass\` 的，换台电脑需要重新扫码。
 
-### 本次实现要点
+### 修复
 
-- **领取前置**：B站「观看视频」类任务靠播放器每 15 秒上报一次心跳累积，不是点一下按钮完成的。程序按真实播放器节奏走完 62 秒（开始播放 → 每 15s 上报 → 结束播放 → 写观看历史），再调领取接口。
-- **登录态**：扫码登录态优先，客户端登录态兜底，**双向**自动回退，并会抓取 B 站返回的新 SESSDATA 自动续期。
-- **防 412**：\`x/web-interface/view\` 的 Referer 必须指向稿件页，用站点根域名会稳定 412；所有接口已按资源设置 Referer 并对 412/403 退避重试。
-- **界面**：无边框透明窗 + 液态玻璃（SVG 位移折射、跟随鼠标的高光、噪点、氛围光斑），按 GPU 能力自动降级。
-- **修掉的两个体验问题**：opaque 模式下彻底关闭 \`SetWindowCompositionAttribute\`（它会填满窗口矩形盖掉 CSS 圆角，其模糊运算还正是 Win10 拖拽迟滞的元凶）；改用自绘拖拽绕开系统模态拖拽循环。
+- 新增 B 站限流返回码 \`235004\` 的识别（与 \`6034007\` 不同）
+- 最终领取被限流时等 30 秒自动重试一次，避免整轮白跑
 
 ### 已知限制
 
-- 仅在 Windows 10 (19045) / Electron 44 上实测。
+- 仅在 Windows 10 (19045) + Electron 44 上实测。
 - 使用 B 站**非官方接口**，接口变动可能导致失效。
-- 每天只请求 1 次领取 + 一轮观看上报（约 5 次心跳），但仍存在理论风控风险，请自行评估。
+- 每天只请求 1 次检测 + 1 次领取 + 一轮观看上报（约 5 次心跳），仍有理论风控风险，请自行评估。
 - 哔哩哔哩 PC 客户端 1.17.6 把登录态加密存在自身配置里，不写网页 Cookie，所以「读客户端登录态」在该版本下通常取不到凭据，请以扫码登录为主。
 
-仅供个人学习自用，请勿用于批量/多账号等违反 B 站用户协议的场景。
+仅供个人学习自用，请勿用于批量、多账号或其他违反 B 站用户协议的场景。
 `;
 
 async function api(pathname, init = {}) {
@@ -59,8 +86,8 @@ async function api(pathname, init = {}) {
   return { status: res.status, json, text };
 }
 
-async function uploadAsset(uploadUrl, file) {
-  const name = path.basename(file);
+async function uploadAsset(uploadUrl, file, assetName) {
+  const name = assetName || path.basename(file);
   const size = fs.statSync(file).size;
   const url = uploadUrl.replace('{?name,label}', `?name=${encodeURIComponent(name)}`);
   process.stdout.write(`上传 ${name}（${(size / 1048576).toFixed(1)} MB）... `);
@@ -93,12 +120,24 @@ async function uploadAsset(uploadUrl, file) {
 
 (async () => {
   const root = path.join(__dirname, '..');
-  const assets = [
-    path.join(root, 'dist', 'BiliGlass-1.0.0-安装版.exe'),
-    path.join(root, 'dist', 'BiliGlass-1.0.0-便携版.exe'),
-  ].filter((f) => fs.existsSync(f));
+  const distDir = path.join(root, 'dist');
 
-  console.log('待上传产物:', assets.map((f) => path.basename(f)).join(', ') || '(无)');
+  // 自动识别产物，不硬编码版本号。
+  // GitHub 会剥掉资源名里的非 ASCII 字符（中文名会互相冲突），所以上传时改成 ASCII 名。
+  const version = require(path.join(root, 'package.json')).version;
+  const found = fs.existsSync(distDir) ? fs.readdirSync(distDir).filter((f) => f.endsWith('.exe')) : [];
+  const assets = found
+    .map((f) => {
+      const src = path.join(distDir, f);
+      const isSetup = /安装版/.test(f);
+      const isPortable = /便携版/.test(f);
+      if (!isSetup && !isPortable) return null;
+      return { src, name: isSetup ? `BiliGlass-${version}-setup.exe` : `BiliGlass-${version}-portable.exe` };
+    })
+    .filter(Boolean);
+
+  console.log(`版本: ${version}`);
+  console.log('待上传产物:', assets.map((a) => `${path.basename(a.src)} → ${a.name}`).join(', ') || '(无)');
 
   const exist = await api(`/repos/${OWNER}/${REPO}/releases/tags/${TAG}`);
   let release = exist.status === 200 ? exist.json : null;
@@ -119,11 +158,11 @@ async function uploadAsset(uploadUrl, file) {
 
   const existing = new Set((release.assets || []).map((a) => a.name));
   for (const a of assets) {
-    if (existing.has(path.basename(a))) {
-      console.log(`ℹ️  已存在同名资源，跳过: ${path.basename(a)}`);
+    if (existing.has(a.name)) {
+      console.log(`ℹ️  已存在同名资源，跳过: ${a.name}`);
       continue;
     }
-    await uploadAsset(release.upload_url, a);
+    await uploadAsset(release.upload_url, a.src, a.name);
   }
 
   const final = await api(`/repos/${OWNER}/${REPO}/releases/tags/${TAG}`);
