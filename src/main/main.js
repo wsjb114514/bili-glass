@@ -12,6 +12,7 @@ const client = require('./client');
 const runner = require('./runner');
 const auth = require('./bili/auth');
 const api = require('./bili/api');
+const watch = require('./bili/watch');
 const { QrSession } = require('./bili/auth');
 
 const ARGS = process.argv.slice(1);
@@ -592,6 +593,21 @@ function registerIpc() {
     return { source: cred.source, info: cred.info || null, notes: cred.notes, state: buildState() };
   });
 
+  ipcMain.handle('watch:resolve', async (_e, input) => {
+    const cred = auth.loadCookie(); // 本地已保存的扫码登录态；没有也能取标题
+    const r = await watch.resolveVideoInput(input, cred ? cred.cookie : '');
+    if (r.ok && !r.empty) {
+      store.patch({ watchBvid: r.bvid, watchBvidTitle: r.title || '' });
+      log.ok(`已指定观看视频：${r.bvid}《${r.title}》（${r.duration}s，来源：${r.via}）`);
+    } else if (r.ok && r.empty) {
+      store.patch({ watchBvid: '', watchBvidTitle: '' });
+      log.info('已清空指定视频，改回自动从排行榜挑选');
+    } else {
+      log.warn(`视频号解析失败：${r.error}`);
+    }
+    return { result: r, state: buildState() };
+  });
+
   ipcMain.handle('ui:open-main', () => {
     switchMode('main');
     return { ok: true };
@@ -704,7 +720,15 @@ app.whenReady().then(async () => {
     // 静默执行，不弹主界面；结束后只弹出结果卡片
     createWindow('result', false);
     await new Promise((r) => setTimeout(r, delay * 1000));
-    await startRun({ manual: false });
+    const result = await startRun({ manual: false });
+
+    // 开机先检测发现今日经验已领取 → 立刻退出进程，不弹任何窗口
+    if (result && result.silentExit) {
+      log.ok('今日经验此前已领取，进程直接退出（不弹结果窗）');
+      app.exit(0);
+      return;
+    }
+
     await ensureLoaded();
     if (win && !win.isDestroyed()) {
       send('evt:run', { phase: 'finished', result: lastResult, account: lastAccount });

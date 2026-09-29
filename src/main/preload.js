@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('biliglass', {
   qrStop: () => ipcRenderer.invoke('auth:qr-stop'),
   logout: () => ipcRenderer.invoke('auth:logout'),
   refreshAccount: () => ipcRenderer.invoke('account:refresh'),
+  resolveWatchVideo: (input) => ipcRenderer.invoke('watch:resolve', input),
   openMain: () => ipcRenderer.invoke('ui:open-main'),
   openResultView: () => ipcRenderer.invoke('ui:open-result'),
   quit: () => ipcRenderer.invoke('app:quit'),

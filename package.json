@@ -1,7 +1,7 @@
 {
   "name": "bili-glass",
   "productName": "BiliGlass",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "B站大会员每日经验自动领取 · 开机自启 · 液态玻璃界面",
   "author": "wsjb114514 <wsjb114514@users.noreply.github.com>",
   "main": "src/main/main.js",

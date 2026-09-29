@@ -17,6 +17,9 @@ const checks = [
   ['opaque 模式关闭原生亚克力（修圆角+拖拽迟滞）', 'opaque-frame'],
   ['自绘拖拽绕开系统拖拽模态循环', 'isLeftButtonDown'],
   ['光斑去掉 filter: blur（软件渲染重绘优化）', 'opaqueNoShadow'],
+  ['v1.1 开机先检测，已领取直接退进程', 'precheckOnly'],
+  ['v1.1 视频号自定义解析（BV/av/分享短链）', 'resolveVideoInput'],
+  ['v1.1 限流码 235004 映射', '235004'],
 ];
 
 const buf = fs.readFileSync(target);

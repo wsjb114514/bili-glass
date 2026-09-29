@@ -22,7 +22,11 @@ const DEFAULTS = {
   // 观看前置：B站「观看视频」类任务/大会员经验需要先有观看行为
   watchBeforeClaim: true,
   watchSeconds: 62,
-  watchBvid: '',
+  watchBvid: '', // 指定观看的稿件 BV 号，留空 = 自动从排行榜挑
+  watchBvidTitle: '', // 解析出的标题，仅用于界面展示
+
+  // 开机先检测：直接问服务端今日经验领了没，已领取就立刻退出进程
+  precheckFirst: true,
 
   // 外观
   material: 'acrylic', // acrylic | blur | none

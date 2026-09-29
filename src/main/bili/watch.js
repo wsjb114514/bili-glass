@@ -16,6 +16,63 @@ const FALLBACK_BVIDS = ['BV1GJ411x7h7', 'BV1xx411c7mD', 'BV17x411w7KC'];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * 解析用户粘贴的视频标识，支持：
+ *   · BV 号：BV1GJ411x7h7（前后带文字也能认出）
+ *   · av 号：av2 / av123456
+ *   · B站 App 的分享短链：https://b23.tv/xxxxx（自动跟跳转取真实 BV 号）
+ *   · 完整视频页链接：https://www.bilibili.com/video/BVxxx
+ * @returns {Promise<{ok:boolean, empty?:boolean, bvid?:string, title?:string, duration?:number, via?:string, error?:string}>}
+ */
+async function resolveVideoInput(input, cookie = '') {
+  const raw = String(input || '').trim();
+  if (!raw) return { ok: true, empty: true };
+
+  // 1) 文本里直接带 BV 号
+  const bv = raw.match(/BV[0-9A-Za-z]{10}/);
+  if (bv) {
+    const info = await api.getVideoInfo({ bvid: bv[0] }, cookie);
+    if (!info.ok) return { ok: false, error: `BV 号无效或稿件不可用：${info.error}`, bvid: bv[0] };
+    return { ok: true, bvid: info.bvid, title: info.title, duration: info.duration, via: 'BV 号' };
+  }
+
+  // 2) av 号
+  const av = raw.match(/(?:^|[^0-9A-Za-z])av(\d+)/i);
+  if (av) {
+    const info = await api.getVideoInfo({ aid: Number(av[1]) }, cookie);
+    if (!info.ok) return { ok: false, error: `av 号无效或稿件不可用：${info.error}` };
+    return { ok: true, bvid: info.bvid, title: info.title, duration: info.duration, via: 'av 号' };
+  }
+
+  // 3) 短链 / 完整链接：跟随跳转后从最终地址或页面里取 BV
+  const url = raw.match(/https?:\/\/[^\s"'<>）)]+/);
+  if (url) {
+    try {
+      const res = await fetch(url[0], {
+        redirect: 'follow',
+        headers: { 'User-Agent': api.UA, 'Accept-Language': 'zh-CN,zh;q=0.9' },
+        signal: AbortSignal.timeout(15000),
+      });
+      const finalUrl = res.url || '';
+      let hit = finalUrl.match(/BV[0-9A-Za-z]{10}/);
+      let via = '分享链接跳转';
+      if (!hit) {
+        const html = await res.text();
+        hit = html.match(/BV[0-9A-Za-z]{10}/);
+        via = '分享链接页面';
+      }
+      if (!hit) return { ok: false, error: `链接跳转后没找到 BV 号（最终地址：${finalUrl.slice(0, 90)}）` };
+      const info = await api.getVideoInfo({ bvid: hit[0] }, cookie);
+      if (!info.ok) return { ok: false, error: `解析到 ${hit[0]}，但稿件不可用：${info.error}` };
+      return { ok: true, bvid: info.bvid, title: info.title, duration: info.duration, via };
+    } catch (err) {
+      return { ok: false, error: `链接解析失败：${err.message}` };
+    }
+  }
+
+  return { ok: false, error: '没识别出视频号：请粘贴 BV 号（如 BV1GJ411x7h7）、av 号或 App 分享链接' };
+}
+
 async function resolveVideo(cookie, { bvid, minDuration }) {
   if (bvid) {
     const info = await api.getVideoInfo({ bvid }, cookie);
@@ -113,4 +170,4 @@ async function simulateWatch(cookie, jar, opts = {}) {
   return { ok, watched: played, video, results, history: hist };
 }
 
-module.exports = { simulateWatch, resolveVideo, FALLBACK_BVIDS };
+module.exports = { simulateWatch, resolveVideo, resolveVideoInput, FALLBACK_BVIDS };

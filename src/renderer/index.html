@@ -185,6 +185,10 @@
 
         <div class="group-title">领取与登录态</div>
         <div class="row">
+          <div class="row-label"><b>开机先检测，已领取就直接退出</b><i>先问服务端今日经验领了没：领过就不拉起客户端、不观看、不弹窗，进程立即结束</i></div>
+          <button class="switch" id="swPrecheckFirst" aria-checked="true"><span class="knob"></span></button>
+        </div>
+        <div class="row">
           <div class="row-label"><b>自动领取每日经验</b><i>关闭后只拉起客户端不领取</i></div>
           <button class="switch" id="swAutoClaim" aria-checked="true"><span class="knob"></span></button>
         </div>
@@ -197,8 +201,13 @@
           <input type="range" class="range" id="rngWatchSeconds" min="20" max="180" step="1" value="62" />
         </div>
         <div class="row col">
-          <div class="row-label"><b>指定视频号（可留空）</b><i id="watchBvidHint">留空则自动从排行榜挑一个时长足够的视频</i></div>
-          <input type="text" class="text-input" id="txtWatchBvid" placeholder="例如 BV1GJ411x7h7" spellcheck="false" autocomplete="off" />
+          <div class="row-label"><b>指定观看哪个视频</b><i id="watchBvidHint">粘贴 BV 号 / av 号 / App 分享链接，留空则自动从排行榜挑一个</i></div>
+          <div class="resolve-row">
+            <input type="text" class="text-input" id="txtWatchBvid" placeholder="BV1GJ411x7h7 或粘贴分享链接" spellcheck="false" autocomplete="off" />
+            <button class="mini-btn" id="btnResolveBvid">解析</button>
+            <button class="mini-btn" id="btnClearBvid">随机</button>
+          </div>
+          <div class="resolved-line" id="resolvedLine">当前：自动从排行榜挑选</div>
         </div>
         <div class="row">
           <div class="row-label"><b>登录态优先级</b><i>失效会自动回退到另一种方式</i></div>

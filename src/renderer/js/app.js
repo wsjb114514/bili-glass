@@ -187,6 +187,7 @@
     setSw('#swAllowClient', cfg.allowClientCredentials);
     setSw('#swWatchBeforeClaim', cfg.watchBeforeClaim !== false);
     setSw('#swDragSelf', cfg.dragSelf !== false);
+    setSw('#swPrecheckFirst', cfg.precheckFirst !== false);
 
     const rngDelay = $('#rngDelay');
     rngDelay.value = cfg.startupDelaySec;
@@ -201,10 +202,23 @@
     }
     const txtBvid = $('#txtWatchBvid');
     if (txtBvid && document.activeElement !== txtBvid) txtBvid.value = cfg.watchBvid || '';
+    renderResolvedLine(cfg);
 
     const cp = state.client && state.client.detected;
     $('#clientPathText').textContent = cp || '未检测到客户端，请手动指定';
     $('#clientPathText').title = cp || '';
+  }
+
+  function renderResolvedLine(cfg) {
+    const line = $('#resolvedLine');
+    if (!line) return;
+    if (cfg.watchBvid) {
+      line.className = 'resolved-line ok';
+      line.textContent = `已指定：${cfg.watchBvid}${cfg.watchBvidTitle ? `《${cfg.watchBvidTitle}》` : ''}`;
+    } else {
+      line.className = 'resolved-line';
+      line.textContent = '当前：自动从排行榜挑选';
+    }
   }
 
   function renderResult(res) {
@@ -431,6 +445,7 @@
     bindSwitch('#swAllowClient', 'allowClientCredentials');
     bindSwitch('#swWatchBeforeClaim', 'watchBeforeClaim');
     bindSwitch('#swDragSelf', 'dragSelf', (v) => setupDrag());
+    bindSwitch('#swPrecheckFirst', 'precheckFirst');
     bindSegment('#segAutostartMethod', 'autostartMethod', async () => {
       // 切换方式时，若当前已开启需要重新注册
       if (autostartEnabled) {
@@ -446,26 +461,50 @@
     bindRange('#rngWatchSeconds', 'watchSeconds', '#watchVal');
 
     const txtBvid = $('#txtWatchBvid');
-    if (txtBvid) {
-      let bvidTimer = null;
-      const commitBvid = async () => {
-        const v = txtBvid.value.trim();
-        const m = v.match(/BV[0-9A-Za-z]{10}/);
-        const val = m ? m[0] : '';
-        txtBvid.value = val;
-        state = await api.saveConfig({ watchBvid: val });
-        if ($('#watchBvidHint')) {
-          $('#watchBvidHint').textContent = val
-            ? `已固定观看该稿件：${val}`
-            : '留空则自动从排行榜挑一个时长足够的视频';
+    const btnResolve = $('#btnResolveBvid');
+    const doResolve = async () => {
+      const raw = txtBvid ? txtBvid.value.trim() : '';
+      const line = $('#resolvedLine');
+      if (line) {
+        line.className = 'resolved-line';
+        line.textContent = raw ? '正在解析…' : '当前：自动从排行榜挑选';
+      }
+      const r = await api.resolveWatchVideo(raw);
+      state = r.state;
+      const res = r.result || {};
+      if (res.ok && res.empty) {
+        if (txtBvid) txtBvid.value = '';
+        renderResolvedLine(state.config);
+      } else if (res.ok) {
+        if (txtBvid) txtBvid.value = res.bvid;
+        if (line) {
+          line.className = 'resolved-line ok';
+          line.textContent = `已指定：${res.bvid}《${res.title}》${res.duration ? ` · ${res.duration}s` : ''}（${res.via}）`;
         }
-      };
-      txtBvid.addEventListener('input', () => {
-        clearTimeout(bvidTimer);
-        bvidTimer = setTimeout(commitBvid, 700);
+      } else {
+        if (line) {
+          line.className = 'resolved-line err';
+          line.textContent = res.error || '解析失败';
+        }
+      }
+      applyState(state);
+      if (line && res.ok && res.bvid) {
+        line.className = 'resolved-line ok';
+        line.textContent = `已指定：${res.bvid}《${res.title}》${res.duration ? ` · ${res.duration}s` : ''}（${res.via}）`;
+      }
+    };
+    if (btnResolve) btnResolve.addEventListener('click', doResolve);
+    if (txtBvid) {
+      txtBvid.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doResolve();
       });
-      txtBvid.addEventListener('blur', commitBvid);
     }
+    $('#btnClearBvid')?.addEventListener('click', async () => {
+      if (txtBvid) txtBvid.value = '';
+      state = await api.saveConfig({ watchBvid: '', watchBvidTitle: '' });
+      renderResolvedLine(state.config);
+      applyState(state);
+    });
 
     $('#btnPickClient')?.addEventListener('click', async () => {
       const r = await api.pickClient();
